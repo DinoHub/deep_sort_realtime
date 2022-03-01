@@ -4,10 +4,10 @@ import logging
 import cv2
 import numpy as np
 
-from deep_sort_realtime.deep_sort import nn_matching
-from deep_sort_realtime.deep_sort.detection import Detection
-from deep_sort_realtime.deep_sort.tracker import Tracker
-from deep_sort_realtime.utils.nms import non_max_suppression
+from .deep_sort import nn_matching
+from .deep_sort.detection import Detection
+from .deep_sort.tracker import Tracker
+from .utils.nms import non_max_suppression
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +83,7 @@ class DeepSort(object):
             if embedder not in EMBEDDER_CHOICES:
                 raise Exception(f"Embedder {embedder} is not a valid choice.")
             if embedder == "mobilenet":
-                from deep_sort_realtime.embedder.embedder_pytorch import (
+                from .embedder.embedder_pytorch import (
                     MobileNetv2_Embedder as Embedder,
                 )
 
@@ -95,7 +95,7 @@ class DeepSort(object):
                     model_wts_path=embedder_wts,
                 )
             else:
-                from deep_sort_realtime.embedder.embedder_clip import (
+                from .embedder.embedder_clip import (
                     Clip_Embedder as Embedder,
                 )
 

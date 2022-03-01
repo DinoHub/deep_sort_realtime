@@ -1,23 +1,25 @@
 import os
 import logging
+from pathlib import Path
 
 import cv2
 import numpy as np
-import pkg_resources
 import torch
 from torchvision.transforms import transforms
 
-from deep_sort_realtime.embedder.mobilenetv2_bottle import MobileNetV2_bottle
+from .mobilenetv2_bottle import MobileNetV2_bottle
 
 logger = logging.getLogger(__name__)
 
-MOBILENETV2_BOTTLENECK_WTS = pkg_resources.resource_filename(
-    "deep_sort_realtime", "embedder/weights/mobilenetv2_bottleneck_wts.pt"
+MOBILENETV2_BOTTLENECK_WTS = str(
+    Path(__file__).parent / "weights/mobilenetv2_bottleneck_wts.pt"
 )
+
 INPUT_WIDTH = 224
 
 
 def batch(iterable, bs=1):
+    """Yields iterable in batches of size bs"""
     l = len(iterable)
     for ndx in range(0, l, bs):
         yield iterable[ndx : min(ndx + bs, l)]
