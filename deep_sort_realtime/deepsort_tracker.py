@@ -1,4 +1,4 @@
-import time
+"""DeepSORT Tracker"""
 import logging
 
 import cv2
@@ -22,7 +22,9 @@ EMBEDDER_CHOICES = [
 ]
 
 
-class DeepSort(object):
+class DeepSort:
+    """DeepSORT Tracker"""
+
     def __init__(
         self,
         max_age=30,
@@ -54,7 +56,8 @@ class DeepSort(object):
             Giving this will override default Track class, this must inherit Track
         embedder : Optional[str] = 'mobilenet'
             Whether to use in-built embedder or not. If None, then embeddings must be given during update.
-            Choice of ['mobilenet', 'clip_RN50', 'clip_RN101', 'clip_RN50x4', 'clip_RN50x16', 'clip_ViT-B/32', 'clip_ViT-B/16']
+            Choice of ['mobilenet', 'clip_RN50', 'clip_RN101', 'clip_RN50x4', 'clip_RN50x16', 'clip_ViT-B/32',
+            'clip_ViT-B/16']
         half : Optional[bool] = True
             Whether to use half precision for deep embedder (applicable for mobilenet only)
         bgr : Optional[bool] = True
@@ -62,7 +65,9 @@ class DeepSort(object):
         embedder_gpu: Optional[bool] = True
             Whether embedder uses gpu or not
         embedder_wts: Optional[str] = None
-            Optional specification of path to embedder's model weights. Will default to looking for weights in `deep_sort_realtime/embedder/weights`. If deep_sort_realtime is installed as a package and CLIP models is used as embedder, best to provide path.
+            Optional specification of path to embedder's model weights. Will default to looking for weights in
+            `deep_sort_realtime/embedder/weights`. If deep_sort_realtime is installed as a package and CLIP
+            models is used as embedder, best to provide path.
         polygon: Optional[bool] = False
             Whether detections are polygons (e.g. oriented bounding boxes)
         today: Optional[datetime.date]
@@ -83,7 +88,7 @@ class DeepSort(object):
             if embedder not in EMBEDDER_CHOICES:
                 raise Exception(f"Embedder {embedder} is not a valid choice.")
             if embedder == "mobilenet":
-                from .embedder.embedder_pytorch import (
+                from .embedder.embedder_pytorch import (  # pylint: disable=import-outside-toplevel
                     MobileNetv2_Embedder as Embedder,
                 )
 
@@ -95,7 +100,7 @@ class DeepSort(object):
                     model_wts_path=embedder_wts,
                 )
             else:
-                from .embedder.embedder_clip import (
+                from .embedder.embedder_clip import (  # pylint: disable=import-outside-toplevel
                     Clip_Embedder as Embedder,
                 )
 
@@ -112,29 +117,35 @@ class DeepSort(object):
             self.embedder = None
         self.polygon = polygon
         logger.info("DeepSort Tracker initialised")
-        logger.info(f"- max age: {max_age}")
-        logger.info(f"- appearance threshold: {max_cosine_distance}")
+        logger.info("- max age: %s", max_age)
+        logger.info("- appearance threshold: %s", max_cosine_distance)
         logger.info(
-            f'- nms threshold: {"OFF" if self.nms_max_overlap==1.0 else self.nms_max_overlap }'
+            "- nms threshold: %s",
+            "OFF" if self.nms_max_overlap == 1.0 else self.nms_max_overlap,
         )
-        logger.info(f"- max num of appearance features: {nn_budget}")
+        logger.info("- max num of appearance features: %s", nn_budget)
         logger.info(
-            f'- overriding track class : {"No" if override_track_class is None else "Yes"}'
+            "- overriding track class : %s",
+            "No" if override_track_class is None else "Yes",
         )
-        logger.info(f'- today given : {"No" if today is None else "Yes"}')
-        logger.info(f'- in-build embedder : {"No" if self.embedder is None else "Yes"}')
-        logger.info(f'- polygon detections : {"No" if polygon is False else "Yes"}')
+        logger.info("- today given : %s", "No" if today is None else "Yes")
+        logger.info(
+            "- in-build embedder : %s", "No" if self.embedder is None else "Yes"
+        )
+        logger.info("- polygon detections : %s", "No" if polygon is False else "Yes")
 
     def update_tracks(self, raw_detections, embeds=None, frame=None, today=None):
 
-        """Run multi-target tracker on a particular sequence.
+        """
+        Run multi-target tracker on a particular sequence.
 
         Parameters
         ----------
         raw_detections (horizontal bb) : List[ Tuple[ List[float or int], float, str ] ]
             List of detections, each in tuples of ( [left,top,w,h] , confidence, detection_class)
         raw_detections (polygon) : List[ List[float], List[int or str], List[float] ]
-            List of Polygons, Classes, Confidences. All 3 sublists of the same length. A polygon defined as a ndarray-like [x1,y1,x2,y2,...].
+            List of Polygons, Classes, Confidences. All 3 sublists of the same length. A polygon defined as a
+            ndarray-like [x1,y1,x2,y2,...].
         embeds : Optional[ List[] ] = None
             List of appearance features corresponding to detections
         frame : Optional [ np.ndarray ] = None
@@ -144,8 +155,8 @@ class DeepSort(object):
 
         Returns
         -------
-        list of track objects (Look into track.py for more info or see "main" section below in this script to see simple example)
-
+        list of track objects (Look into track.py for more info or see "main" section below in this script to see
+        simple example)
         """
 
         if embeds is None:
@@ -179,10 +190,7 @@ class DeepSort(object):
         boxes = np.array([d.ltwh for d in detections])
         scores = np.array([d.confidence for d in detections])
         if self.nms_max_overlap < 1.0:
-            # nms_tic = time.perf_counter()
             indices = non_max_suppression(boxes, self.nms_max_overlap, scores)
-            # nms_toc = time.perf_counter()
-            # logger.debug(f'nms time: {nms_toc-nms_tic}s')
             detections = [detections[i] for i in indices]
 
         # Update tracker.
@@ -191,18 +199,23 @@ class DeepSort(object):
 
         return self.tracker.tracks
 
-    def refresh_track_ids(self):
-        self.tracker._next_id
+    # def refresh_track_ids(self):
+    #     """Refresh track IDs."""
+    #     self.tracker._next_id
 
     def generate_embeds(self, frame, raw_dets):
+        """generate_embeddings"""
         crops = self.crop_bb(frame, raw_dets)
         return self.embedder.predict(crops)
 
     def generate_embeds_poly(self, frame, polygons, bounding_rects):
+        """Generate polygon embeddings"""
         crops = self.crop_poly_pad_black(frame, polygons, bounding_rects)
         return self.embedder.predict(crops)
 
-    def create_detections(self, raw_dets, embeds):
+    @staticmethod
+    def create_detections(raw_dets, embeds):
+        """Create detections"""
         detection_list = []
         for raw_det, embed in zip(raw_dets, embeds):
             detection_list.append(
@@ -210,7 +223,9 @@ class DeepSort(object):
             )  # raw_det = [bbox, conf_score, class]
         return detection_list
 
-    def create_detections_poly(self, dets, embeds, bounding_rects):
+    @staticmethod
+    def create_detections_poly(dets, embeds, bounding_rects):
+        """Create polygon detections"""
         detection_list = []
         dets.extend([embeds, bounding_rects])
         for raw_polygon, cl, score, embed, bounding_rect in zip(*dets):
@@ -225,6 +240,7 @@ class DeepSort(object):
 
     @staticmethod
     def process_polygons(raw_polygons):
+        """Process polygons"""
         polygons = [
             [polygon[x : x + 2] for x in range(0, len(polygon), 2)]
             for polygon in raw_polygons
@@ -236,6 +252,7 @@ class DeepSort(object):
 
     @staticmethod
     def crop_bb(frame, raw_dets):
+        """Crop bounding box"""
         crops = []
         im_height, im_width = frame.shape[:2]
         for detection in raw_dets:
@@ -251,6 +268,7 @@ class DeepSort(object):
 
     @staticmethod
     def crop_poly_pad_black(frame, polygons, bounding_rects):
+        """Crop"""
         masked_polys = []
         im_height, im_width = frame.shape[:2]
         for polygon, bounding_rect in zip(polygons, bounding_rects):
@@ -272,4 +290,5 @@ class DeepSort(object):
         return masked_polys
 
     def delete_all_tracks(self):
+        """Delete all tracks"""
         self.tracker.delete_all_tracks()

@@ -1,3 +1,4 @@
+"""Tensorflow embedder"""
 import os
 import logging
 from pathlib import Path
@@ -7,6 +8,9 @@ import numpy as np
 import pkg_resources
 import tensorflow as tf
 
+from .utils import batch
+
+
 MOBILENETV2_BOTTLENECK_WTS = pkg_resources.resource_filename(
     "deep_sort_realtime",
     "embedder/weights/mobilenet_v2_weights_tf_dim_ordering_tf_kernels_1.0_224.h5",
@@ -14,22 +18,17 @@ MOBILENETV2_BOTTLENECK_WTS = pkg_resources.resource_filename(
 
 logger = logging.getLogger(__name__)
 
-gpus = tf.config.experimental.list_physical_devices("GPU")
-if gpus:
+GPUS = tf.config.experimental.list_physical_devices("GPU")
+if GPUS:
     # Currently, memory growth needs to be the same across GPUs
-    for gpu in gpus:
-        tf.config.experimental.set_memory_growth(gpu, True)
+    for gpu_idx in GPUS:
+        tf.config.experimental.set_memory_growth(gpu_idx, True)
 
 INPUT_WIDTH = 224
 
 
-def batch(iterable, bs=1):
-    l = len(iterable)
-    for ndx in range(0, l, bs):
-        yield iterable[ndx : min(ndx + bs, l)]
-
-
 def get_mobilenetv2_with_preproc(wts="imagenet"):
+    """Get MobileNetV2 model with pre-processing"""
     i = tf.keras.layers.Input([None, None, 3], dtype=tf.uint8)
     x = tf.cast(i, tf.float32)
     x = tf.keras.applications.mobilenet_v2.preprocess_input(x)
@@ -48,9 +47,10 @@ def get_mobilenetv2_with_preproc(wts="imagenet"):
     return model
 
 
-class MobileNetv2_Embedder(object):
+class MobileNetv2_Embedder:
     """
-    MobileNetv2_Embedder loads a Mobilenetv2 pretrained on Imagenet1000, with classification layer removed, exposing the bottleneck layer, outputing a feature of size 1280.
+    MobileNetv2_Embedder loads a Mobilenetv2 pretrained on Imagenet1000, with classification layer removed, exposing
+    the bottleneck layer, outputing a feature of size 1280.
 
     Params
     ------
@@ -78,8 +78,8 @@ class MobileNetv2_Embedder(object):
         self.bgr = bgr
 
         logger.info("MobileNetV2 Embedder (tf) for Deep Sort initialised")
-        logger.info(f"- max batch size: {self.max_batch_size}")
-        logger.info(f"- expects BGR: {self.bgr}")
+        logger.info("- max batch size: %s", self.max_batch_size)
+        logger.info("- expects BGR: %s", self.bgr)
 
         zeros = np.zeros((100, 100, 3), dtype=np.uint8)
         self.predict([zeros, zeros])  # warmup

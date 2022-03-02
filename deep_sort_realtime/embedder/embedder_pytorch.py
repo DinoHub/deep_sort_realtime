@@ -1,3 +1,4 @@
+"""Pytorch embedder"""
 import os
 import logging
 from pathlib import Path
@@ -8,6 +9,7 @@ import torch
 from torchvision.transforms import transforms
 
 from .mobilenetv2_bottle import MobileNetV2_bottle
+from .utils import batch
 
 logger = logging.getLogger(__name__)
 
@@ -18,16 +20,10 @@ MOBILENETV2_BOTTLENECK_WTS = str(
 INPUT_WIDTH = 224
 
 
-def batch(iterable, bs=1):
-    """Yields iterable in batches of size bs"""
-    l = len(iterable)
-    for ndx in range(0, l, bs):
-        yield iterable[ndx : min(ndx + bs, l)]
-
-
-class MobileNetv2_Embedder(object):
+class MobileNetv2_Embedder:
     """
-    MobileNetv2_Embedder loads a Mobilenetv2 pretrained on Imagenet1000, with classification layer removed, exposing the bottleneck layer, outputing a feature of size 1280.
+    MobileNetv2_Embedder loads a Mobilenetv2 pretrained on Imagenet1000, with classification layer removed, exposing
+    the bottleneck layer, outputing a feature of size 1280.
 
     Params
     ------
@@ -64,17 +60,18 @@ class MobileNetv2_Embedder(object):
         self.bgr = bgr
 
         logger.info("MobileNetV2 Embedder for Deep Sort initialised")
-        logger.info(f"- gpu enabled: {self.gpu}")
-        logger.info(f"- half precision: {self.half}")
-        logger.info(f"- max batch size: {self.max_batch_size}")
-        logger.info(f"- expects BGR: {self.bgr}")
+        logger.info("- gpu enabled: %s", self.gpu)
+        logger.info("- half precision: %s", self.half)
+        logger.info("- max batch size: %s", self.max_batch_size)
+        logger.info("- expects BGR: %s", self.bgr)
 
         zeros = np.zeros((100, 100, 3), dtype=np.uint8)
         self.predict([zeros])  # warmup
 
     def preprocess(self, np_image):
         """
-        Preprocessing for embedder network: Flips BGR to RGB, resize, convert to torch tensor, normalise with imagenet mean and variance, reshape. Note: input image yet to be loaded to GPU through tensor.cuda()
+        Preprocessing for embedder network: Flips BGR to RGB, resize, convert to torch tensor, normalise with imagenet
+        mean and variance, reshape. Note: input image yet to be loaded to GPU through tensor.cuda()
 
         Parameters
         ----------

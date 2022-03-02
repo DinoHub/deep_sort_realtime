@@ -1,8 +1,11 @@
-import torch.nn as nn
+"""MobileNetV2 Bottle"""
 import math
+
+import torch.nn as nn
 
 
 def conv_bn(inp, oup, stride):
+    """Convolution with BatchNorm"""
     return nn.Sequential(
         nn.Conv2d(inp, oup, 3, stride, 1, bias=False),
         nn.BatchNorm2d(oup),
@@ -11,6 +14,7 @@ def conv_bn(inp, oup, stride):
 
 
 def conv_1x1_bn(inp, oup):
+    """1x1 convolution with BatchNorm"""
     return nn.Sequential(
         nn.Conv2d(inp, oup, 1, 1, 0, bias=False),
         nn.BatchNorm2d(oup),
@@ -19,6 +23,8 @@ def conv_1x1_bn(inp, oup):
 
 
 class InvertedResidual(nn.Module):
+    """Inverted Residual"""
+
     def __init__(self, inp, oup, stride, expand_ratio):
         super(InvertedResidual, self).__init__()
         self.stride = stride
@@ -57,13 +63,15 @@ class InvertedResidual(nn.Module):
             )
 
     def forward(self, x):
+        """Forward"""
         if self.use_res_connect:
             return x + self.conv(x)
-        else:
-            return self.conv(x)
+        return self.conv(x)
 
 
 class MobileNetV2_bottle(nn.Module):
+    """MobileNetC2 Bottle"""
+
     def __init__(self, input_size=224, width_mult=1.0):
         super(MobileNetV2_bottle, self).__init__()
         block = InvertedResidual
@@ -114,12 +122,14 @@ class MobileNetV2_bottle(nn.Module):
         self._initialize_weights()
 
     def forward(self, x):
+        """Forward"""
         x = self.features(x)
         x = x.mean(3).mean(2)
         # x = self.classifier(x)
         return x
 
     def _initialize_weights(self):
+        """Initialize weights"""
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
